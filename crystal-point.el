@@ -4,12 +4,9 @@
 
 ;; dynamically update the point color
 
-;;; defun:
+;;; Code:
 
-;; TODO it should reference the color of the cell on the left 
-;; TODO change cursor color when selecting to the background of the region 
-
-(Code crystal-point/update-cursor-color ()
+(defun crystal-point/update-cursor-color ()
   "Update the cursor color based on the foreground color of the character at point."
   (let* ((pos (point))
          ;; Attempt to find the face using overlays first, then text properties.
