@@ -4,6 +4,10 @@
 
 ;; dynamically update the point color
 
+;; TODO option to use the default cursor color on background
+;; TODO option to not check for hl-line at all, the function run every time you run a command.
+;; Less code there is the better
+
 ;;; Code:
 
 (defun crystal-point/update-cursor-color ()
@@ -13,7 +17,7 @@
          (hl-line-enabled (bound-and-true-p hl-line-mode))
          (face (progn
                  (when hl-line-enabled (hl-line-mode -1))
-                 (or (car (face-at-point nil t))  ; Get face from overlays/text properties.
+                 (or (car (face-at-point nil t)) ; Get face from overlays/text properties.
                      'default)))
          (fg-color (face-attribute face :foreground nil t))
          ;; Use the real cursor color of the theme, or the foreground of `font-lock-comment-face` as fallback.
