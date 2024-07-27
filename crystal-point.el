@@ -12,9 +12,9 @@
 
 (defun crystal-point/update-cursor-color ()
   "Update the cursor color based on the foreground color of the character at point."
-  (set-cursor-color (or (let ((fg (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)))
-                          (and (not (string= fg "unspecified")) fg))
-                        (face-attribute 'font-lock-comment-face :foreground))))
+  (set-cursor-color
+   (or (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)
+       (face-attribute 'font-lock-comment-face :foreground))))
 
 ;; HL-LINE FIX
 ;; (defun crystal-point/update-cursor-color ()
