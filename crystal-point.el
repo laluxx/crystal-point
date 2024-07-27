@@ -4,40 +4,40 @@
 
 ;; dynamically update the point color
 
-;; TODO option to use the default cursor color on background
-;; TODO option to not check for hl-line at all, the function run every time you run a command.
-;; Less code there is the better
+;; TODO add a variable 'crystal-point-handle-hl-line'
+;; if you don't use 'hl-line-mode' it makes no sense to do
+;; all those extra checks 
 
 ;;; Code:
 
-(defun crystal-point/update-cursor-color ()
-  "Update the cursor color based on the foreground color of the character at point."
-  (set-cursor-color
-   (or (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)
-       (face-attribute 'font-lock-comment-face :foreground))))
-
-;; HL-LINE FIX
+;; BASE (fastest)
 ;; (defun crystal-point/update-cursor-color ()
 ;;   "Update the cursor color based on the foreground color of the character at point."
-;;   (let* ((pos (point))
-;;          ;; Temporarily disable hl-line-mode if it's enabled.
-;;          (hl-line-enabled (bound-and-true-p hl-line-mode))
+;;   (set-cursor-color
+;;    (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)))
+
+;; UNSPECIFIED FIX (a bit slower but more reliable)
+(defun crystal-point/update-cursor-color ()
+  "Update the cursor color based on the foreground color of the character at point."
+  (let ((fg (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)))
+    (set-cursor-color
+     (if (or (not fg) (string= fg "unspecified"))
+         (face-attribute 'default :foreground)
+       fg))))
+
+;; HL-LINE FIX (slowest) 
+;; (defun crystal-point/update-cursor-color ()
+;;   "Update the cursor color based on the foreground color of the character at point."
+;;   (let* ((hl-line-enabled (bound-and-true-p hl-line-mode))
 ;;          (face (progn
 ;;                  (when hl-line-enabled (hl-line-mode -1))
-;;                  (or (car (face-at-point nil t)) ; Get face from overlays/text properties.
-;;                      'default)))
-;;          (fg-color (face-attribute face :foreground nil t))
-;;          ;; Use the real cursor color of the theme, or the foreground of `font-lock-comment-face` as fallback.
-;;          (theme-cursor-color (frame-parameter nil 'cursor-color))
-;;          (fallback-color (face-attribute 'font-lock-comment-face :foreground))
-;;          (cursor-color (if (or (not fg-color) (string= fg-color "unspecified"))
-;;                            (or theme-cursor-color fallback-color)
-;;                          fg-color)))
-;;     ;; Re-enable hl-line-mode if it was previously enabled.
-;;     (when hl-line-enabled (hl-line-mode 1))
-;;     ;; Set the cursor color if it differs from the current one to minimize updates.
-;;     (unless (equal cursor-color (frame-parameter nil 'cursor-color))
-;;       (set-cursor-color cursor-color))))
+;;                  (or (car (face-at-point nil t)) 'default)))
+;;          (fg (face-attribute face :foreground nil t))
+;;          (fallback-color (face-attribute 'default :foreground)))
+;;     (when hl-line-enabled (hl-line-mode 1))  ; Re-enable hl-line-mode if it was enabled.
+;;     (set-cursor-color (if (or (not fg) (string= fg "unspecified"))
+;;                           fallback-color
+;;                         fg))))
 
 ;;;###autoload
 (defun crystal-point-enable ()
