@@ -1,6 +1,6 @@
 # CRYSTAL POINT
 
-Make the point crystal clear
+Make the cursor crystal clear
 
 ![Alt text](./demo.gif)
 
