@@ -2,11 +2,7 @@
 
 ;;; Commentary:
 
-;; dynamically update the point color
-
-;; TODO add a variable 'crystal-point-handle-hl-line'
-;; if you don't use 'hl-line-mode' it makes no sense to do
-;; all those extra checks 
+;; dynamically update the cursor color to match face foreground at point
 
 ;;; Code:
 
@@ -17,34 +13,18 @@
   "Run `after-load-theme-hook`."
   (run-hooks 'after-load-theme-hook))
 
-;; BASE (fastest)
-;; (defun crystal-point/update-cursor-color ()
-;;   "Update the cursor color based on the foreground color of the character at point."
-;;   (set-cursor-color
-;;    (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)))
+(defun crystal-point/get-cursor-backup-color ()
+  "Get a valid cursor backup color, falling back to default foreground if needed."
+  (let ((cursor-bg (face-attribute 'cursor :background nil t)))
+    (if (or (not cursor-bg) (string= cursor-bg "unspecified"))
+        (face-attribute 'default :foreground)
+      cursor-bg)))
 
-;; UNSPECIFIED FIX (a bit slower but more reliable)
-;; (defun crystal-point/update-cursor-color ()
-;;   "Update the cursor color based on the foreground color of the character at point."
-;;   (let ((fg (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)))
-;;     (set-cursor-color
-;;      (if (or (not fg) (string= fg "unspecified"))
-;;          (face-attribute 'default :foreground)
-;;        fg))))
+(defun crystal-point/update-cursor-backup ()
+  "Update the cursor-backup face color."
+  (set-face-attribute 'cursor-backup nil
+                      :foreground (crystal-point/get-cursor-backup-color)))
 
-;; UNSPECIFIED + CURSOR-BACKUP TODO
-;; (defun crystal-point/update-cursor-color ()
-;;   "Update the cursor color based on the foreground color of the character at point."
-;;   (let* ((char (char-after (point)))
-;;          (fg (if (and char (not (char-equal char ?\s)) (not (char-equal char ?\t)) (not (char-equal char ?\n)))
-;;                  (face-attribute (or (car (face-at-point nil t)) 'default) :foreground nil t)
-;;                (face-attribute 'cursor-backup :foreground nil t))))
-;;     (set-cursor-color
-;;      (if (or (not fg) (string= fg "unspecified"))
-;;          (face-attribute 'default :foreground)
-;;        fg))))
-
-;; UNSPECIFIED + CURSOR-BACKUP + TERMINAL
 (defun crystal-point/update-cursor-color ()
   "Update the cursor color based on the foreground color of the character at point.
 Works in both GUI and terminal modes."
@@ -56,46 +36,27 @@ Works in both GUI and terminal modes."
                     (face-attribute 'default :foreground)
                   fg)))
     (if (display-graphic-p)
-        (set-cursor-color color) ;; GUI
-      (send-string-to-terminal (format "\e]12;%s\a" color)))));; TTY mode: use ANSI escape codes to set the cursor color.
-
-
-;; HL-LINE FIX (slowest) 
-;; (defun crystal-point/update-cursor-color ()
-;;   "Update the cursor color based on the foreground color of the character at point."
-;;   (let* ((hl-line-enabled (bound-and-true-p hl-line-mode))
-;;          (face (progn
-;;                  (when hl-line-enabled (hl-line-mode -1))
-;;                  (or (car (face-at-point nil t)) 'default)))
-;;          (fg (face-attribute face :foreground nil t))
-;;          (fallback-color (face-attribute 'default :foreground)))
-;;     (when hl-line-enabled (hl-line-mode 1))  ; Re-enable hl-line-mode if it was enabled.
-;;     (set-cursor-color (if (or (not fg) (string= fg "unspecified"))
-;;                           fallback-color
-;;                         fg))))
+        (set-cursor-color color) ; GUI
+      (send-string-to-terminal (format "\e]12;%s\a" color))))) ; Terminal
 
 ;;;###autoload
 (defun crystal-point-enable ()
   "Enable dynamic cursor color updates."
   (interactive)
-  ;; Create the cursor-backup face if it doesn't already exist
   (unless (facep 'cursor-backup)
     (make-face 'cursor-backup))
-  ;; Update the cursor-backup face
-  (set-face-attribute 'cursor-backup nil
-                      :foreground (face-attribute 'cursor :background))
-  ;; Add hooks
+  (crystal-point/update-cursor-backup)
   (add-hook 'post-command-hook 'crystal-point/update-cursor-color)
-  (add-hook 'after-load-theme-hook
-            (lambda ()
-              (set-face-attribute 'cursor-backup nil
-                                  :foreground (face-attribute 'cursor :background)))))
+  (add-hook 'after-load-theme-hook 'crystal-point/update-cursor-backup)
+  (advice-add 'enable-theme :after (lambda (&rest _) (crystal-point/update-cursor-backup))))
 
 ;;;###autoload
 (defun crystal-point-disable ()
   "Disable dynamic cursor color updates."
   (interactive)
-  (remove-hook 'post-command-hook 'crystal-point/update-cursor-color))
+  (remove-hook 'post-command-hook 'crystal-point/update-cursor-color)
+  (remove-hook 'after-load-theme-hook 'crystal-point/update-cursor-backup)
+  (advice-remove 'enable-theme 'crystal-point/update-cursor-backup))
 
 (provide 'crystal-point)
 
