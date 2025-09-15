@@ -1,4 +1,4 @@
-;;; crystal-point.el --- Dynamically update the cursor color to match face foreground color at point  -*- lexical-binding: t; -*-
+;;; crystal-point.el --- Dynamic cursor color matching face at point  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025 Laluxx
 ;; Author: Laluxx
@@ -34,17 +34,12 @@
 ;;
 ;; The package works in both GUI and terminal, and handles theme
 ;; changes for both `load-theme` and `consult-theme`.
-;;
-;; TODO FIX `hl-line-mode' and overlays
+
+;;; TODO:
+
+;; FIX `hl-line-mode' and overlays
 
 ;;; Code:
-
-(defvar crystal-point-after-load-theme-hook nil
-  "Hook run after a color theme is loaded using `load-theme`.")
-
-(defun crystal-point--load-theme-advice (&rest _)
-  "Advice function to run after `load-theme`."
-  (run-hooks 'crystal-point-after-load-theme-hook))
 
 (defun crystal-point--get-cursor-backup-color ()
   "Get a valid cursor backup color, falling back to default foreground if needed."
@@ -83,18 +78,14 @@ Works in both GUI and terminal modes."
   (unless (facep 'cursor-backup)
     (make-face 'cursor-backup))
   (crystal-point--update-cursor-backup)
-  (add-hook 'post-command-hook 'crystal-point--update-cursor-color)
-  (add-hook 'crystal-point-after-load-theme-hook 'crystal-point--update-cursor-backup)
-  (advice-add 'load-theme :after #'crystal-point--load-theme-advice)
+  (add-hook 'post-command-hook #'crystal-point--update-cursor-color)
   (advice-add 'enable-theme :after #'crystal-point--theme-advice))
 
 ;;;###autoload
 (defun crystal-point-disable ()
   "Disable dynamic cursor color updates."
   (interactive)
-  (remove-hook 'post-command-hook 'crystal-point--update-cursor-color)
-  (remove-hook 'crystal-point-after-load-theme-hook 'crystal-point--update-cursor-backup)
-  (advice-remove 'load-theme #'crystal-point--load-theme-advice)
+  (remove-hook 'post-command-hook #'crystal-point--update-cursor-color)
   (advice-remove 'enable-theme #'crystal-point--theme-advice))
 
 (provide 'crystal-point)
